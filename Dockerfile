@@ -1,4 +1,4 @@
-FROM debian:jessie
+FROM ubuntu:focal
 ARG RUNNER_VERSION="2.279.0"
 ARG GIT_VERSION="2.29.0"
 ARG DUMB_INIT_VERSION="1.2.2"
@@ -17,8 +17,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Docker in docker
 
-RUN apt-get update && \
-  apt-get install -y --no-install-recommends \
+RUN apt update && \
+  apt install -y --no-install-recommends \
     awscli \
     curl \
     tar \
@@ -44,7 +44,9 @@ RUN apt-get update && \
     python3-pip \
     jq \
     dumb-init \
-  && pip3 install --no-cache-dir awscliv2 \
+    gnupg2
+
+RUN pip3 install --no-cache-dir awscliv2 \
   && locale-gen en_US.UTF-8 \
   && dpkg-reconfigure locales \
   && c_rehash \
@@ -59,27 +61,14 @@ RUN apt-get update && \
   && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ${DOCKER_KEY} \
   && curl -fsSL https://download.docker.com/linux/$(lsb_release -is | awk '{print tolower($0)}')/gpg | apt-key add - \
   && ( add-apt-repository "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/$(lsb_release -is | awk '{print tolower($0)}') $(lsb_release -cs) stable" ) \
-  && apt-get update \
-  && apt-get install -y docker-ce docker-ce-cli containerd.io --no-install-recommends --allow-unauthenticated \
+  && apt update \
+  && apt install -y docker-ce docker-ce-cli containerd.io --no-install-recommends --allow-unauthenticated \
   && [[ $(lscpu -J | jq -r '.lscpu[] | select(.field == "Vendor ID:") | .data') == "ARM" ]] && echo "Not installing docker-compose. See https://github.com/docker/compose/issues/6831" || ( curl -sL "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose ) \
   && chmod +x /usr/local/bin/docker-compose \
   && rm -rf /var/lib/apt/lists/* \
   && rm -rf /tmp/*
 
-# Docker runner
-
-RUN apt-get update \
-    && apt-get install -y \
-        curl \
-        sudo \
-        git \
-        jq \
-        tar \
-        gnupg2 \
-        apt-transport-https \
-        ca-certificates  \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# # Docker runner
     
 RUN useradd -m github && \
     usermod -aG sudo github && \
